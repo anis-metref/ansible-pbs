@@ -2,7 +2,7 @@
 
 Un playbook Ansible pour installer et configurer Proxmox Backup Server sur Debian/Ubuntu, avec envoi d’un récapitulatif sur Discord via webhook.
 
----
+
 
 ## Arborescence du projet
 

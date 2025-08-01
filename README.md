@@ -80,13 +80,13 @@ sudo apt install ansible ansible-lint
 
 1. Éditez `hosts.ini` pour y ajouter vos machines cibles :
 
-   ```ini
+```ini
 [pbs]
 ansible-client ansible_host=IP-Client ansible_ssh_private_key_file=/home/{user}/.ssh/id_rsa    # indiquez la clé ssh privée
 
 [pbs:vars]
 ansible_python_interpreter=/usr/bin/python3
-   ```
+```
 
 2. Placez vos variables publiques dans le fichier `vars.yml` 
 

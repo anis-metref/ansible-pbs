@@ -1,0 +1,9 @@
+---
+- name: Installer Proxmox Backup Server (community)
+  hosts: pbs
+  vars_files:
+    - vault.yml
+  roles:
+    - pbs
+#  collections:
+#    - community.general

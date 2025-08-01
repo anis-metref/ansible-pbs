@@ -1,0 +1,200 @@
+# roles/pbs/tasks/main.yml
+
+---
+
+# 1. Initialiser les listes de récapitulatif
+- name: Initialiser les listes de récapitulatif
+  set_fact:
+    pbs_success_list: []
+    pbs_failure_list: []
+
+# 2. Suppression de l’ancienne liste pbs.list
+- name: Supprimer toute ancienne liste pbs.list (cassée)
+  file:
+    path: /etc/apt/sources.list.d/pbs.list
+    state: absent
+  register: remove_pbs_list
+  ignore_errors: yes
+
+- name: Enregistrer statut suppression liste
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Suppression ancienne liste'] }}"
+  when: not remove_pbs_list.failed | default(false)
+
+- name: Enregistrer échec suppression liste
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Suppression ancienne liste'] }}"
+  when: remove_pbs_list.failed | default(false)
+
+# 3. Installation des dépendances de base
+- name: Installer les dépendances de base
+  apt:
+    name:
+      - gnupg
+      - curl
+      - ca-certificates
+      - apt-transport-https
+    state: present
+    update_cache: no
+  register: install_deps
+  ignore_errors: yes
+
+- name: Enregistrer statut dépendances
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Installation dépendances'] }}"
+  when: not install_deps.failed | default(false)
+
+- name: Enregistrer échec dépendances
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Installation dépendances'] }}"
+  when: install_deps.failed | default(false)
+
+# 4. Mise à jour de la clé Proxmox
+- name: Installer / mettre à jour la clé Proxmox
+  get_url:
+    url: "https://download.proxmox.com/debian/proxmox-release-{{ ansible_distribution_release }}.gpg"
+    dest: /usr/share/keyrings/proxmox-release.gpg
+    mode: "0644"
+  register: update_key
+  ignore_errors: yes
+
+- name: Enregistrer statut clé Proxmox
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Mise à jour clé Proxmox'] }}"
+  when: not update_key.failed | default(false)
+
+- name: Enregistrer échec clé Proxmox
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Mise à jour clé Proxmox'] }}"
+  when: update_key.failed | default(false)
+
+# 5. Dépôt community PBS
+- name: Déposer le dépôt community PBS
+  copy:
+    dest: /etc/apt/sources.list.d/pbs.list
+    content: >-
+      deb [signed-by=/usr/share/keyrings/proxmox-release.gpg]
+      http://download.proxmox.com/debian/pbs {{ ansible_distribution_release }} pbs-no-subscription
+    mode: "0644"
+  register: add_repo
+  ignore_errors: yes
+
+- name: Enregistrer statut dépôt PBS
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Ajout dépôt PBS'] }}"
+  when: not add_repo.failed | default(false)
+
+- name: Enregistrer échec dépôt PBS
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Ajout dépôt PBS'] }}"
+  when: add_repo.failed | default(false)
+
+# 6. Mise à jour APT
+- name: Mettre à jour la liste APT
+  apt:
+    update_cache: yes
+    cache_valid_time: 0
+  register: apt_update
+  ignore_errors: yes
+
+- name: Enregistrer statut update APT
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Update APT'] }}"
+  when: not apt_update.failed | default(false)
+
+- name: Enregistrer échec update APT
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Update APT'] }}"
+  when: apt_update.failed | default(false)
+
+# 7. Installation de proxmox-backup-server
+- name: Installer proxmox-backup-server
+  apt:
+    name: proxmox-backup-server
+    state: latest
+  register: install_pbs
+  ignore_errors: yes
+
+- name: Enregistrer statut installation PBS
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Installation PBS'] }}"
+  when: not install_pbs.failed | default(false)
+
+- name: Enregistrer échec installation PBS
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Installation PBS'] }}"
+  when: install_pbs.failed | default(false)
+
+# 8. Activation et démarrage des services
+- name: Activer et démarrer proxmox-backup
+  systemd:
+    name: proxmox-backup
+    enabled: yes
+    state: started
+  register: svc_pbs
+  ignore_errors: yes
+
+- name: Enregistrer statut service proxmox-backup
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Service proxmox-backup démarré'] }}"
+  when: not svc_pbs.failed | default(false)
+
+- name: Enregistrer échec service proxmox-backup
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Service proxmox-backup démarré'] }}"
+  when: svc_pbs.failed | default(false)
+
+- name: Activer et démarrer proxmox-backup-proxy
+  systemd:
+    name: proxmox-backup-proxy
+    enabled: yes
+    state: started
+  register: svc_proxy
+  ignore_errors: yes
+
+- name: Enregistrer statut service proxmox-backup-proxy
+  set_fact:
+    pbs_success_list: "{{ pbs_success_list + ['Service proxmox-backup-proxy démarré'] }}"
+  when: not svc_proxy.failed | default(false)
+
+- name: Enregistrer échec service proxmox-backup-proxy
+  set_fact:
+    pbs_failure_list: "{{ pbs_failure_list + ['Service proxmox-backup-proxy démarré'] }}"
+  when: svc_proxy.failed | default(false)
+
+# 9. Envoi du récapitulatif sur Discord
+- name: Envoyer récapitulatif installation PBS sur Discord
+  uri:
+    url: "{{ discord_webhook_url }}"
+    method: POST
+    headers:
+      Content-Type: application/json
+    status_code: 204
+    body_format: json
+    body:
+      username: "{{ notify_username }}"
+      embeds:
+        - title: "📋 Récapitulatif installation PBS"
+          color: "{{ success_color }}"
+          fields:
+            - name: "Hôte"
+              value: "{{ inventory_hostname }}"
+              inline: true
+            - name: "IP"
+              value: "{{ ansible_default_ipv4.address }}"
+              inline: true
+            - name: "Date"
+              value: "{{ ansible_date_time.date }}"
+              inline: true
+            - name: "Heure"
+              value: "{{ ansible_date_time.time }}"
+              inline: true
+            - name: "Tâches réussies"
+              value: "{{ pbs_success_list | join('\n') }}"
+              inline: false
+            - name: "Tâches échouées"
+              value: >-
+                {{ (pbs_failure_list | default([]) | length > 0)
+                   | ternary(pbs_failure_list | join('\n'), 'Aucune') }}
+              inline: false
+  delegate_to: localhost

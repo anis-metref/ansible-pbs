@@ -1,0 +1,9 @@
+---
+- name: apt-update
+  ansible.builtin.command: apt-get update
+  become: true
+
+- name: restart pbs
+  ansible.builtin.systemd:
+    name: proxmox-backup
+    state: restarted

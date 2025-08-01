@@ -1,0 +1,10 @@
+#---
+# Secrets éventuels (smtp, tokens…). Chiffrez ensuite :
+# ansible-vault encrypt vault.yml
+
+
+---
+discord_webhook_url: "https://discord.com/api/webhooks/ID/TOKEN"   # mettez votre url webhook 
+notify_username: "Ansibleserver"
+success_color: 3066993   # vert
+failure_color: 15158332  # rouge

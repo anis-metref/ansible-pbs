@@ -27,7 +27,7 @@ Un playbook Ansible pour installer et configurer Proxmox Backup Server sur Debia
 
 ## Prérequis
 
-- Poste de contrôle avec Ansible 2.9+ installé  
+- Machine Serveur Ansible 2.9+ installé  
 - Machine cible Debian/Ubuntu accessible en SSH (partage de clés)  
 - Fichier `vault.yml` contenant vos secrets (webhook Discord, mots de passe, etc.)  
 
@@ -147,3 +147,4 @@ Pour simuler sans appliquer les changements :
 ansible-playbook -i hosts.ini pbs-playbook.yml --check --diff --ask-vault-pass
 ```
 ---
+

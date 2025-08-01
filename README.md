@@ -139,6 +139,9 @@ ansible-playbook -i hosts.ini pbs-playbook.yml --ask-vault-pass -K
 
 ---
 
+![ansible](./1.png)
+
+
 ## Mode “dry-run”
 
 Pour simuler sans appliquer les changements :

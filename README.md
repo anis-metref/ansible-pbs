@@ -146,15 +146,4 @@ Pour simuler sans appliquer les changements :
 ```bash
 ansible-playbook -i hosts.ini pbs-playbook.yml --check --diff --ask-vault-pass
 ```
-
----
-
-## Partage à la communauté
-
-1. Forkez ce dépôt sur GitHub.  
-2. Clonez votre fork :  
-   ```bash
-   git clone https://github.com/VOTRE_UTILISATEUR/ansible-pbs.git
-   cd ansible-pbs
-   ```
 ---
